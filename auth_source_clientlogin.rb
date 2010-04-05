@@ -50,20 +50,22 @@ class AuthSourceClientLogin < AuthSource
       # attempt authentication (presumably against google)
       client_login_handler = GData::Auth::ClientLogin.new('cl', client_login_opts)
       token = client_login_handler.get_token(login, password,  self.account.sub(/[^a-z0-9]+/, '') + '-redMine-0.1')
-      # get calendar feed (in order to get author data)
+      # get calendar feed (in order to get author data), return xml data as REXML::Document object
       cal_client = GData::Client::Calendar.new(:auth_handler => client_login_handler)
-      response = cal_client.make_request(:get, 'https://www.google.com/calendar/feeds/default/owncalendars/full')
-      # parse and return xml data as REXML::Document object
-      response_xml = response.to_xml()
-      attrs = Hash.new
+      response_xml = cal_client.make_request(:get, 'https://www.google.com/calendar/feeds/default/owncalendars/full').to_xml()
       # get email from xml if available, or default to login name
-      attrs[:login] = REXML::XPath.first(response_xml, '/feed/author/email') || login
-      attrs[:mail] = attrs[:mail]
-      # get name and split on whitespace, or default to empty strings
-      name_segments = REXML::XPath.first(response_xml, '/feed/author/name').to_s.split(/\s+/, 2)
-      attrs[:firstname] = name_segments[0] || ''
-      attrs[:lastname] = name_segments[1] || ''
-      # if we've gotten this far, it may have actually worked...cool!
+      mail_from_xpath = response_xml.elements['/feed/author/email'].first.value
+      name_from_xpath = response_xml.elements['/feed/author/name'].first.value.split(/\s+/, 2)
+      # TODO: name seems to be coming back as just email address...better way to find an actual name?  or just set both to empty strings?  if the latter, wouldnt even need to actually do the Calendar request...
+      # build attributes to return
+      attrs = [
+        :login => mail_from_xpath || login,
+        :mail => mail_from_xpath || login,
+        :firstname => name_from_xpath[0] || '',
+        :lastname => name_from_xpath[1] || '',
+        :auth_source_id => self.id
+      ]
+      # TODO: currently assuming onthefly_register is on, should probably actually check this...if its not on, then what?
       return attrs
     rescue => e
       logger.error "Error during authentication: #{e.message}"
