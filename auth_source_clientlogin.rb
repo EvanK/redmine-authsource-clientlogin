@@ -34,9 +34,11 @@ class AuthSourceClientLogin < AuthSource
       logger.debug "Refusing to authenticate '#{login}', not hosted under '#{self.account}'" if logger && logger.debug?
       return nil
     end
-    # if they don't supply a domain at all, automatically append the domain in {self.account}
+    # if they don't supply a domain at all, kick them back
+    # NOTE: originally planned to auto-append domain {self.account}, but redmine sees 'jdoe@domain.com' and 'jdoe' as two seperate users...
     if login_domain[1] == nil
-      login = login_domain[0] + '@' + self.account
+      logger.debug "ClientLogin username must be in user@domain format" if logger && logger.debug?
+      return nil
     end
     
     begin
@@ -65,7 +67,6 @@ class AuthSourceClientLogin < AuthSource
         :lastname => name_from_xpath[1] || '',
         :auth_source_id => self.id
       ]
-      # TODO: currently assuming onthefly_register is on, should probably actually check this...if its not on, then what?
       return attrs
     rescue => e
       logger.error "Error during authentication: #{e.message}"
