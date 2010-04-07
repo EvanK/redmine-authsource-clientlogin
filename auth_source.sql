@@ -6,7 +6,7 @@ INSERT INTO auth_sources SET
   type='AuthSourceClientLogin',
   -- Name of this alternative authentication source. Will be displayed in Administration UI pages.
   name='ClientLogin',
-  -- Google ClientLogin authentication url.  If empty or nil, defaults to 'https://www.google.com/accounts/ClientLogin' (Thanks GData gem!)
+  -- Not used (anymore) for this AuthSource
   host='',
   -- Not used for this AuthSource
   port=0,

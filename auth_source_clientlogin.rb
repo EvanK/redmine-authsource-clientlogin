@@ -34,38 +34,36 @@ class AuthSourceClientLogin < AuthSource
       logger.debug "Refusing to authenticate '#{login}', not hosted under '#{self.account}'" if logger && logger.debug?
       return nil
     end
-    # if they don't supply a domain at all, automatically append the domain in {self.account}
+    # if they don't supply a domain at all, kick them back
+    # NOTE: originally planned to auto-append domain {self.account}, but redmine sees 'jdoe@domain.com' and 'jdoe' as two seperate users...
     if login_domain[1] == nil
-      login = login_domain[0] + '@' + self.account
+      logger.debug "ClientLogin username must be in user@domain format" if logger && logger.debug?
+      return nil
     end
     
     begin
-      # get authentication token
-      # if self.host is given, authenticate against it...otherwise, GData class will use default url
-      client_login_opts = Hash.new
-      client_login_opts[:account_type] = self.base_dn
-      if self.host != nil && self.host != ''
-        client_login_opts[:auth_url] = self.host
-      end
-      # attempt authentication (presumably against google)
-      client_login_handler = GData::Auth::ClientLogin.new('cl', client_login_opts)
-      token = client_login_handler.get_token(login, password,  self.account.sub(/[^a-z0-9]+/, '') + '-redMine-0.1')
-      # get calendar feed (in order to get author data), return xml data as REXML::Document object
-      cal_client = GData::Client::Calendar.new(:auth_handler => client_login_handler)
-      response_xml = cal_client.make_request(:get, 'https://www.google.com/calendar/feeds/default/owncalendars/full').to_xml()
-      # get email from xml if available, or default to login name
-      mail_from_xpath = response_xml.elements['/feed/author/email'].first.value
-      name_from_xpath = response_xml.elements['/feed/author/name'].first.value.split(/\s+/, 2)
-      # TODO: name seems to be coming back as just email address...better way to find an actual name?  or just set both to empty strings?  if the latter, wouldnt even need to actually do the Calendar request...
-      # build attributes to return
+      # attempt authentication (will raise BadAuthentication error if it fails)
+      # NOTE: have yet to find a way around ClientLogin captcha issue...
+      source_name = self.account.sub(/[^a-z0-9]+/, '') + '-redMine-0.1'
+      login_handler = GData::Auth::ClientLogin.new('cp', :account_type => self.base_dn)
+      login_handler.get_token(login, password,  source_name)
+      client = GData::Client::Contacts.new(:auth_handler => login_handler)
+      
+      # get full contact feed and extract first contact with given login as their email
+      # NOTE: if the user has > 100 contacts, just don't worry about scouring for their name...Redmine will ask them during signup anyway
+      feed = client.get('https://www.google.com/m8/feeds/contacts/default/full?max-results=100').to_xml
+      contact_name = feed.elements["/feed/entry[gd:email/@address='#{login}']/title"]
+      # if we found one, extract their title/name and split into first and last
+      full_name = contact_name == nil ? [] : contact_name.first.value.split(/\s+/, 2)
+      
+      # assemble & return user attributes as best we could determine them
       attrs = [
-        :login => mail_from_xpath || login,
-        :mail => mail_from_xpath || login,
-        :firstname => name_from_xpath[0] || '',
-        :lastname => name_from_xpath[1] || '',
+        :login => login,
+        :mail => login,
+        :firstname => full_name[0] || '',
+        :lastname => full_name[1] || '',
         :auth_source_id => self.id
       ]
-      # TODO: currently assuming onthefly_register is on, should probably actually check this...if its not on, then what?
       return attrs
     rescue => e
       logger.error "Error during authentication: #{e.message}"
@@ -77,4 +75,5 @@ class AuthSourceClientLogin < AuthSource
     "ClientLogin"
   end
 end
+
 
