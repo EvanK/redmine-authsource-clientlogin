@@ -1,10 +1,10 @@
 # Google ClientLogin Authentication for Redmine #
 
-**NOTE**: This is in a very early alpha state (meaning it doesn't entirely work yet).
+**NOTE**: This is still in an very early non-stable state (ie: may break without warning or reason).
 
 ## Installation ##
 
-First of all, you may need to install the [Google Data APIs Ruby Utility Library](http://code.google.com/p/gdata-ruby-util/).  I'm working off of version 1.1.1
+First of all, you may need to install the [Google Data APIs Ruby Utility Library](http://code.google.com/p/gdata-ruby-util/).  I'm working off of version 1.1.1, though earlier versions may work.
 
     sudo gem install gdata -v 1.1.1
 
@@ -18,4 +18,4 @@ Finally, place the included `auth_source_clientlogin.rb` file in your Redmine co
 
 ### But wait...It's not working! ###
 
-As I said, it is in a very early alpha state, and progress is somewhat hindered by the fact that I am still a relative newbie to coding in Ruby.  Rest assured that I am rapidly making progress, and hope to have it operational soon!
+If you have followed the above instructions, check any [known issues](http://github.com/EvanK/redmine-authsource-clientlogin/issues).  If that doesn't shed any light, please feel free to file a new issue.
