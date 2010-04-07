@@ -48,13 +48,14 @@ class AuthSourceClientLogin < AuthSource
       login_handler = GData::Auth::ClientLogin.new('cp', :account_type => self.base_dn)
       login_handler.get_token(login, password,  source_name)
       client = GData::Client::Contacts.new(:auth_handler => login_handler)
+      
       # get full contact feed and extract first contact with given login as their email
       # NOTE: if the user has > 100 contacts, just don't worry about scouring for their name...Redmine will ask them during signup anyway
       feed = client.get('https://www.google.com/m8/feeds/contacts/default/full?max-results=100').to_xml
-      logger.error "dumping xml: #{feed}"
       contact_name = feed.elements["/feed/entry[gd:email/@address='#{login}']/title"]
       # if we found one, extract their title/name and split into first and last
       full_name = contact_name == nil ? [] : contact_name.first.value.split(/\s+/, 2)
+      
       # assemble & return user attributes as best we could determine them
       attrs = [
         :login => login,
