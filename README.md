@@ -16,7 +16,7 @@ Next, insert a new record into your Redmine's `auth_sources` table.  An example 
 
 Finally, place the included `auth_source_clientlogin.rb` file in your Redmine codebase under `app/models/` and restart Redmine.
 
-### But wait...Soemthing's not working! ###
+### But wait...Something's not working! ###
 
 If you have followed the above instructions, check any [known issues](http://github.com/EvanK/redmine-authsource-clientlogin/issues).  If that doesn't shed any light, please feel free to file a new issue.
 
